@@ -37,7 +37,7 @@ export default function Results({ result, onTryAgain, onBack }: ResultsProps) {
 
   return (
     <motion.div
-      className="min-h-screen py-8 px-4 sm:px-6 max-w-5xl mx-auto"
+      className="min-h-screen bg-black text-white py-10 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -46,15 +46,17 @@ export default function Results({ result, onTryAgain, onBack }: ResultsProps) {
         <button
           type="button"
           onClick={onBack}
-          className="text-slate-400 hover:text-white transition-colors font-mono text-sm"
+          className="font-mono text-xs sm:text-sm text-white/50 hover:text-white transition-colors tracking-wider"
         >
           ← Home
         </button>
-        <h2 className="font-display text-xl font-semibold text-white">Results</h2>
+        <h2 className="font-display text-lg sm:text-xl font-semibold text-white tracking-tight">
+          Results
+        </h2>
         <button
           type="button"
           onClick={onTryAgain}
-          className="text-primary-400 hover:text-primary-300 font-mono text-sm"
+          className="font-mono text-xs sm:text-sm text-white/50 hover:text-white transition-colors tracking-wider"
         >
           Try again
         </button>
@@ -62,20 +64,20 @@ export default function Results({ result, onTryAgain, onBack }: ResultsProps) {
 
       {switched && (
         <motion.div
-          className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30"
-          initial={{ opacity: 0, y: -10 }}
+          className="mb-6 p-4 sm:p-5 rounded-2xl border border-white/20 bg-white/[0.04]"
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.1 }}
         >
-          <p className="font-semibold text-amber-400 mb-1">Algorithm auto-switched</p>
-          <p className="text-slate-300 text-sm">{result.reasonSwitched}</p>
-          <p className="text-slate-500 text-xs mt-2">
+          <p className="font-display font-semibold text-white text-sm mb-1">Algorithm auto-switched</p>
+          <p className="text-white/70 text-sm font-sans">{result.reasonSwitched}</p>
+          <p className="font-mono text-xs text-white/40 mt-2">
             Chosen: {ALG_LABELS[result.chosenAlgorithm]} → Used: {ALG_LABELS[result.usedAlgorithm]}
           </p>
         </motion.div>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-3 mb-8">
+      <div className="grid gap-4 sm:grid-cols-3 mb-8">
         {[
           { label: 'Avg waiting time', value: result.metrics.avgWaitingTime.toFixed(2), unit: 'ms' },
           { label: 'Avg turnaround time', value: result.metrics.avgTurnaroundTime.toFixed(2), unit: 'ms' },
@@ -83,72 +85,80 @@ export default function Results({ result, onTryAgain, onBack }: ResultsProps) {
         ].map((m, i) => (
           <motion.div
             key={m.label}
-            className="rounded-xl bg-dark-800/80 border border-slate-700/50 p-4"
-            initial={{ opacity: 0, y: 10 }}
+            className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
+            transition={{ delay: 0.08 + i * 0.04 }}
           >
-            <p className="text-slate-400 text-sm font-mono">{m.label}</p>
-            <p className="text-2xl font-display font-semibold text-white mt-1">
+            <p className="font-mono text-[11px] text-white/40 tracking-wider uppercase">{m.label}</p>
+            <p className="text-2xl font-display font-semibold text-white mt-1 tracking-tight">
               {m.value}
-              {m.unit && <span className="text-slate-500 text-base ml-1">{m.unit}</span>}
+              {m.unit && <span className="text-white/50 text-base font-sans ml-1">{m.unit}</span>}
             </p>
           </motion.div>
         ))}
       </div>
 
       <motion.section
-        className="rounded-xl bg-dark-800/80 border border-slate-700/50 p-4 sm:p-6 mb-6"
-        initial={{ opacity: 0, y: 10 }}
+        className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6"
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
+        transition={{ delay: 0.2 }}
       >
-        <h3 className="font-mono text-sm font-medium text-slate-300 mb-4">Gantt chart</h3>
+        <span className="font-mono text-[11px] text-white/40 tracking-widest uppercase block mb-4">
+          Gantt chart
+        </span>
         <GanttChart data={result.ganttChart} maxTime={maxTime} />
       </motion.section>
 
       <motion.section
-        className="rounded-xl bg-dark-800/80 border border-slate-700/50 p-4 sm:p-6"
-        initial={{ opacity: 0, y: 10 }}
+        className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-8"
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.25 }}
       >
-        <h3 className="font-mono text-sm font-medium text-slate-300 mb-4">Per-process waiting & turnaround</h3>
+        <span className="font-mono text-[11px] text-white/40 tracking-widest uppercase block mb-4">
+          Per-process waiting & turnaround
+        </span>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} />
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: 8 }}
-                labelStyle={{ color: '#cbd5e1' }}
+                contentStyle={{
+                  backgroundColor: 'rgba(0,0,0,0.9)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: 12,
+                }}
+                labelStyle={{ color: 'rgba(255,255,255,0.9)' }}
                 formatter={(value: number) => [`${value} ms`, '']}
                 labelFormatter={(label) => `Process ${label}`}
               />
-              <Bar dataKey="waiting" name="Waiting" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="turnaround" name="Turnaround" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="waiting" name="Waiting" fill="rgba(255,255,255,0.9)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="turnaround" name="Turnaround" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </motion.section>
 
       <motion.div
-        className="mt-8 flex gap-4 justify-center"
+        className="flex flex-wrap gap-4 justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.35 }}
       >
         <button
           type="button"
           onClick={onTryAgain}
-          className="px-6 py-3 rounded-xl bg-primary-500 text-dark-950 font-semibold hover:bg-primary-400 transition-colors"
+          className="px-6 py-3 rounded-full bg-white text-black font-display font-semibold text-sm hover:opacity-90 transition-opacity"
         >
           Compare with another algorithm
         </button>
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors"
+          className="px-6 py-3 rounded-full border border-white/20 text-white/80 font-mono text-sm hover:bg-white/5 transition-colors"
         >
           Back to home
         </button>

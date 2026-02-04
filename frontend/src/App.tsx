@@ -12,7 +12,7 @@ function App() {
   const [result, setResult] = useState<SimulateResponse | null>(null);
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-black">
       <AnimatePresence mode="wait">
         {page === 'landing' && (
           <Landing key="landing" onStart={() => setPage('input')} />

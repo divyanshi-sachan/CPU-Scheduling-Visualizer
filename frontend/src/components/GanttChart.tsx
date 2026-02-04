@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 
 const PROCESS_COLORS = [
-  '#22c55e',
-  '#3b82f6',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
+  'rgba(255,255,255,0.95)',
+  'rgba(255,255,255,0.75)',
+  'rgba(255,255,255,0.55)',
+  'rgba(255,255,255,0.4)',
+  'rgba(255,255,255,0.3)',
+  'rgba(255,255,255,0.25)',
+  'rgba(255,255,255,0.2)',
+  'rgba(255,255,255,0.15)',
 ];
 
 export interface GanttEntry {
@@ -31,13 +31,13 @@ export default function GanttChart({ data, maxTime, height = 280 }: GanttChartPr
   return (
     <div className="w-full overflow-x-auto">
       <div className="min-w-[400px]">
-        <div className="flex border-b border-slate-700 pb-2 mb-2">
-          <div className="w-16 flex-shrink-0 text-slate-400 font-mono text-xs">PID</div>
+        <div className="flex border-b border-white/10 pb-2 mb-2">
+          <div className="w-16 flex-shrink-0 text-white/40 font-mono text-xs">PID</div>
           <div className="flex-1 relative" style={{ height: 24 }}>
             {Array.from({ length: Math.ceil(maxTime) + 1 }).map((_, i) => (
               <span
                 key={i}
-                className="absolute text-slate-500 font-mono text-xs"
+                className="absolute text-white/35 font-mono text-xs"
                 style={{ left: `${i * scale}%` }}
               >
                 {i}
@@ -46,7 +46,7 @@ export default function GanttChart({ data, maxTime, height = 280 }: GanttChartPr
           </div>
         </div>
         {pids.length === 0 ? (
-          <div className="text-slate-500 text-sm font-mono py-4">No process data</div>
+          <div className="text-white/40 text-sm font-mono py-4">No process data</div>
         ) : (
           pids.map((pid, rowIndex) => {
             const bars = data.filter((d) => d.pid === pid);
@@ -60,12 +60,12 @@ export default function GanttChart({ data, maxTime, height = 280 }: GanttChartPr
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: rowIndex * 0.05 }}
               >
-                <div className="w-16 flex-shrink-0 font-mono text-sm text-slate-300">P{pid}</div>
-                <div className="flex-1 relative h-full rounded overflow-hidden bg-dark-800">
+                <div className="w-16 flex-shrink-0 font-mono text-sm text-white/70">P{pid}</div>
+                <div className="flex-1 relative h-full rounded overflow-hidden bg-white/5">
                   {bars.map((bar, i) => (
                     <motion.div
                       key={`${pid}-${i}`}
-                      className="absolute top-1 bottom-1 rounded flex items-center justify-center text-xs font-mono font-medium text-dark-900 origin-left"
+                      className="absolute top-1 bottom-1 rounded flex items-center justify-center text-xs font-mono font-medium text-black origin-left"
                       style={{
                         left: `${bar.start * scale}%`,
                         width: `${Math.max((bar.end - bar.start) * scale, 2)}%`,
