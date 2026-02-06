@@ -1,3 +1,4 @@
+// CPU Scheduling Visualizer Types
 export type AlgorithmType = 'fcfs' | 'sjf' | 'round_robin' | 'priority';
 
 export interface ProcessInput {
@@ -34,8 +35,9 @@ export interface ProcessResult {
 export interface Metrics {
   avgWaitingTime: number;
   avgTurnaroundTime: number;
+  avgResponseTime: number;
   contextSwitches: number;
-  throughput?: number;
+  throughput: number;
 }
 
 export interface SimulateRequest {

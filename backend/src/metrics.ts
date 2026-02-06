@@ -1,3 +1,4 @@
+// Metrics computation module
 import type { GanttEntry, ProcessInput, ProcessResult, Metrics } from './types';
 
 export function computeMetrics(
@@ -6,10 +7,15 @@ export function computeMetrics(
 ): { processes: ProcessResult[]; metrics: Metrics; contextSwitches: number } {
   const n = processes.length;
   const completionTimes = new Map<number, number>();
+  const firstResponseTimes = new Map<number, number>();
 
   for (const entry of ganttChart) {
     if (!entry.isContextSwitch) {
       completionTimes.set(entry.pid, Math.max(completionTimes.get(entry.pid) ?? 0, entry.end));
+      // Track first time each process gets CPU (response time)
+      if (!firstResponseTimes.has(entry.pid)) {
+        firstResponseTimes.set(entry.pid, entry.start);
+      }
     }
   }
 
@@ -33,9 +39,16 @@ export function computeMetrics(
   const totalTurnaround = processResults.reduce((s, p) => s + p.turnaroundTime, 0);
   const maxTime = Math.max(...processResults.map((p) => p.completionTime), 0);
 
+  // Calculate average response time (time from arrival to first CPU access)
+  const totalResponseTime = processes.reduce((sum, p) => {
+    const firstResponse = firstResponseTimes.get(p.pid) ?? 0;
+    return sum + (firstResponse - p.arrivalTime);
+  }, 0);
+
   const metrics: Metrics = {
     avgWaitingTime: n > 0 ? Math.round((totalWait / n) * 100) / 100 : 0,
     avgTurnaroundTime: n > 0 ? Math.round((totalTurnaround / n) * 100) / 100 : 0,
+    avgResponseTime: n > 0 ? Math.round((totalResponseTime / n) * 100) / 100 : 0,
     contextSwitches,
     throughput: maxTime > 0 ? Math.round((n / maxTime) * 100) / 100 : 0,
   };

@@ -27,8 +27,9 @@ export interface ProcessResult {
 export interface Metrics {
   avgWaitingTime: number;
   avgTurnaroundTime: number;
+  avgResponseTime: number;
   contextSwitches: number;
-  throughput?: number;
+  throughput: number;
 }
 
 export interface SimulateResponse {

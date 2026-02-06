@@ -427,10 +427,12 @@ export default function Simulator() {
               )}
 
               {/* Metrics */}
-              <div className="grid gap-4 grid-cols-3 mb-8">
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-8">
                 {[
                   { label: 'Avg Waiting', value: result.metrics.avgWaitingTime.toFixed(2), unit: 'ms' },
                   { label: 'Avg Turnaround', value: result.metrics.avgTurnaroundTime.toFixed(2), unit: 'ms' },
+                  { label: 'Avg Response', value: result.metrics.avgResponseTime.toFixed(2), unit: 'ms' },
+                  { label: 'Throughput', value: result.metrics.throughput.toFixed(2), unit: 'p/ms' },
                   { label: 'Context Switches', value: String(result.metrics.contextSwitches), unit: '' },
                 ].map((m, i) => (
                   <motion.div
