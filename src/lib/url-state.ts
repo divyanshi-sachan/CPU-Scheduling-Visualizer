@@ -8,7 +8,8 @@ export interface SimulatorUrlState {
   processes: ProcessInput[];
 }
 
-export function parseSimulatorSearchParams(searchParams: URLSearchParams): SimulatorUrlState | null {
+export function parseSimulatorSearchParams(searchParams: URLSearchParams | null): SimulatorUrlState | null {
+  if (!searchParams) return null;
   const algo = searchParams.get('algorithm');
   if (!algo || !ALG_VALUES.includes(algo as AlgorithmType)) return null;
   const pList = searchParams.getAll('p');

@@ -67,8 +67,8 @@ export default function Simulator() {
 
   // Apply URL state on mount (client-only)
   useEffect(() => {
-    if (hasAppliedUrlRef.current) return;
-    const state = parseSimulatorSearchParams(searchParams);
+    if (hasAppliedUrlRef.current || !searchParams) return;
+    const state = parseSimulatorSearchParams(searchParams as URLSearchParams);
     if (state) {
       hasAppliedUrlRef.current = true;
       setProcesses(state.processes);
@@ -79,12 +79,14 @@ export default function Simulator() {
 
   // Sync state to URL when algorithm, timeQuantum, or processes change
   useEffect(() => {
+    if (!searchParams) return;
     const query = buildSimulatorSearchParams(algorithm, timeQuantum, processes);
     const current = searchParams.toString();
     if (query === current) return;
     // Don't clear URL on first load when we have URL params but state not yet applied
     if (current && !query) return;
-    const next = query ? `${pathname}?${query}` : pathname;
+    const base = pathname ?? '/';
+    const next = query ? `${base}?${query}` : base;
     router.replace(next, { scroll: false });
   }, [algorithm, timeQuantum, processes, pathname, router, searchParams]);
 
