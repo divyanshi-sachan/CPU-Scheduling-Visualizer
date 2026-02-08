@@ -31,3 +31,5 @@ frontend/dist/
 # Optional
 coverage/
 .cache/
+
+.next/
