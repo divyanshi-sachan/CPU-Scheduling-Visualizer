@@ -1,5 +1,16 @@
 import type { SimulateResponse } from '@/types';
 
+export function downloadJSON(result: SimulateResponse): void {
+  const json = JSON.stringify(result, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cpu-schedule-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function downloadCSV(result: SimulateResponse): void {
   const headers = ['PID', 'Arrival', 'Burst', 'Completion', 'Waiting', 'Turnaround'];
   const rows = result.processes.map((p) =>

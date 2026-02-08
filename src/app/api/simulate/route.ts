@@ -9,6 +9,7 @@ function normalizeAlgorithm(algo: string): AlgorithmType {
     round_robin: 'round_robin',
     rr: 'round_robin',
     priority: 'priority',
+    priority_preemptive: 'priority_preemptive',
   };
   return map[algo?.toLowerCase()] ?? 'fcfs';
 }

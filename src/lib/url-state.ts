@@ -1,6 +1,6 @@
 import type { ProcessInput, AlgorithmType } from '@/types';
 
-const ALG_VALUES: AlgorithmType[] = ['fcfs', 'sjf', 'round_robin', 'priority'];
+const ALG_VALUES: AlgorithmType[] = ['fcfs', 'sjf', 'round_robin', 'priority', 'priority_preemptive'];
 
 export interface SimulatorUrlState {
   algorithm: AlgorithmType | null;

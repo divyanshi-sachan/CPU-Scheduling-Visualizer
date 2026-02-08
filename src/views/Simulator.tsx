@@ -10,7 +10,7 @@ import GanttChart from '@/components/GanttChart';
 import Checkbox from '@/components/Checkbox';
 import type { ProcessInput, AlgorithmType, SimulateResponse } from '@/types';
 import { PRESETS } from '@/lib/simulator-presets';
-import { downloadCSV, downloadGanttPNG } from '@/lib/export-utils';
+import { downloadCSV, downloadGanttPNG, downloadJSON } from '@/lib/export-utils';
 import { parseSimulatorSearchParams, buildSimulatorSearchParams } from '@/lib/url-state';
 
 const darkTheme = createTheme({
@@ -23,7 +23,8 @@ const ALGORITHMS: { value: AlgorithmType; label: string; shortLabel: string; des
   { value: 'fcfs', label: 'First Come First Serve', shortLabel: 'FCFS', description: 'Processes executed in arrival order' },
   { value: 'sjf', label: 'Shortest Job First', shortLabel: 'SJF', description: 'Shortest burst time executed first' },
   { value: 'round_robin', label: 'Round Robin', shortLabel: 'RR', description: 'Time-sliced execution with quantum' },
-  { value: 'priority', label: 'Priority Scheduling', shortLabel: 'PRI', description: 'Higher priority processes first' },
+  { value: 'priority', label: 'Priority (Non‑preemptive)', shortLabel: 'PRI', description: 'Higher priority first, no preemption' },
+  { value: 'priority_preemptive', label: 'Priority (Preemptive)', shortLabel: 'PRI+', description: 'Higher priority first, preempt on arrival' },
 ];
 
 const ALG_LABELS: Record<AlgorithmType, string> = {
@@ -31,6 +32,7 @@ const ALG_LABELS: Record<AlgorithmType, string> = {
   sjf: 'SJF',
   round_robin: 'Round Robin',
   priority: 'Priority',
+  priority_preemptive: 'Priority (Preemptive)',
 };
 
 const inputClass =
@@ -59,8 +61,12 @@ export default function Simulator() {
   const [stepIndex, setStepIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [algorithmBDropdownOpen, setAlgorithmBDropdownOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const algorithmBDropdownRef = useRef<HTMLDivElement>(null);
   const ganttRef = useRef<HTMLDivElement>(null);
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasAppliedUrlRef = useRef(false);
@@ -99,11 +105,18 @@ export default function Simulator() {
     });
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
+      }
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(target)) {
+        setExportDropdownOpen(false);
+      }
+      if (algorithmBDropdownRef.current && !algorithmBDropdownRef.current.contains(target)) {
+        setAlgorithmBDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -262,6 +275,18 @@ export default function Simulator() {
       .sort((a, b) => a - b);
   }, [currentStepEntry, result?.processes]);
 
+  const stepExplanation = useMemo(() => {
+    if (stepIndex < 0 || !result?.ganttChart?.length) return null;
+    const entry = result.ganttChart[stepIndex];
+    if (!entry || entry.pid <= 0) return null;
+    const duration = entry.end - entry.start;
+    const readyExcludingRunning = readyQueueAtStep.filter((pid) => pid !== entry.pid);
+    const readyStr = readyExcludingRunning.length > 0
+      ? ` Ready queue: P${readyExcludingRunning.join(', P')}.`
+      : '';
+    return `P${entry.pid} runs for ${duration} time unit(s) (t=${entry.start}→${entry.end}).${readyStr}`;
+  }, [stepIndex, result?.ganttChart, readyQueueAtStep]);
+
   const chartData = useMemo(() => {
     if (!result) return [];
     return result.processes.map((p) => ({
@@ -318,6 +343,66 @@ export default function Simulator() {
               </>
             )}
           </button>
+          <div ref={exportDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => result && setExportDropdownOpen((o) => !o)}
+              disabled={!result}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 text-white/80 font-mono text-xs hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Export results"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export
+              <motion.svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                animate={{ rotate: exportDropdownOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </motion.svg>
+            </button>
+            <AnimatePresence>
+              {exportDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-44 rounded-xl bg-neutral-900 border border-white/10 shadow-xl shadow-black/50 overflow-hidden z-50"
+                >
+                  <button
+                    type="button"
+                    onClick={() => { result && downloadCSV(result); setExportDropdownOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-white/90 hover:bg-white/10 font-mono flex items-center gap-2"
+                  >
+                    <span className="text-white/50 text-xs">CSV</span>
+                    Export as CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { result && downloadJSON(result); setExportDropdownOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-white/90 hover:bg-white/10 font-mono flex items-center gap-2 border-t border-white/5"
+                  >
+                    <span className="text-white/50 text-xs">JSON</span>
+                    Export as JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { ganttRef.current && downloadGanttPNG(ganttRef.current); setExportDropdownOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-white/90 hover:bg-white/10 font-mono flex items-center gap-2 border-t border-white/5"
+                  >
+                    <span className="text-white/50 text-xs">PNG</span>
+                    Export as PNG
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           {loading && (
             <span className="text-white/50 text-sm font-mono">Simulating...</span>
           )}
@@ -467,8 +552,8 @@ export default function Simulator() {
               )}
             </AnimatePresence>
 
-            {/* Compare mode & Algorithm B - boxed so it stands out */}
-            <div className="mt-4 p-4 rounded-xl bg-white/[0.04] border border-white/10 flex flex-wrap items-center gap-4">
+            {/* Compare mode & Algorithm B */}
+            <div className="mt-4 p-4 rounded-xl bg-neutral-900/50 border border-white/10 flex flex-wrap items-center gap-4">
               <Checkbox
                 checked={compareMode}
                 onChange={(checked) => {
@@ -478,22 +563,77 @@ export default function Simulator() {
                 label="Compare two algorithms"
               />
               {compareMode && (
-                <div className="relative">
-                  <select
-                    value={algorithmB}
-                    onChange={(e) => setAlgorithmB((e.target.value || '') as AlgorithmType | '')}
-                    className="w-full min-w-[180px] pl-4 pr-10 py-2.5 rounded-lg bg-neutral-800/90 border border-white/15 text-white font-mono text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all appearance-none cursor-pointer"
+                <div ref={algorithmBDropdownRef} className="relative flex-1 min-w-[200px]">
+                  <motion.button
+                    type="button"
+                    onClick={() => setAlgorithmBDropdownOpen((o) => !o)}
+                    className={`w-full bg-neutral-900 border rounded-xl px-4 py-3 text-left transition-all duration-200 flex items-center justify-between ${
+                      algorithmBDropdownOpen ? 'border-white/30 ring-2 ring-white/10' : 'border-white/10 hover:border-white/20'
+                    }`}
+                    whileTap={{ scale: 0.995 }}
                   >
-                    <option value="">Select second algorithm...</option>
-                    {ALGORITHMS.filter((a) => a.value !== algorithm).map((a) => (
-                      <option key={a.value} value={a.value}>{a.shortLabel} – {a.label}</option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/50" aria-hidden>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
+                    {algorithmB ? (
+                      <>
+                        <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-mono text-xs text-white/80">
+                          {ALGORITHMS.find((a) => a.value === algorithmB)?.shortLabel ?? '?'}
+                        </span>
+                        <span className="text-white font-medium text-sm truncate">
+                          {ALGORITHMS.find((a) => a.value === algorithmB)?.label ?? algorithmB}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-white/50 text-sm">Select second algorithm...</span>
+                    )}
+                    <motion.svg
+                      className="w-5 h-5 text-white/40 flex-shrink-0 ml-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      animate={{ rotate: algorithmBDropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </motion.svg>
+                  </motion.button>
+                  <AnimatePresence>
+                    {algorithmBDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="absolute z-50 w-full mt-2 bg-neutral-900 border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-black/50"
+                      >
+                        {ALGORITHMS.filter((a) => a.value !== algorithm).map((a) => (
+                          <motion.button
+                            key={a.value}
+                            type="button"
+                            onClick={() => {
+                              setAlgorithmB(a.value);
+                              setAlgorithmBDropdownOpen(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left transition-all duration-150 flex items-center gap-3 ${
+                              algorithmB === a.value ? 'bg-white/10' : 'hover:bg-white/5'
+                            } border-b border-white/5 last:border-b-0`}
+                          >
+                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-xs ${
+                              algorithmB === a.value ? 'bg-white text-black' : 'bg-white/10 text-white/60'
+                            }`}>
+                              {a.shortLabel}
+                            </span>
+                            <span className={`font-medium text-sm ${algorithmB === a.value ? 'text-white' : 'text-white/80'}`}>
+                              {a.label}
+                            </span>
+                            {algorithmB === a.value && (
+                              <svg className="w-5 h-5 text-white ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
@@ -541,13 +681,13 @@ export default function Simulator() {
             <div className="rounded-xl bg-neutral-900/50 border border-white/10 overflow-hidden">
               <div
                 className={`grid gap-2 px-4 py-3 border-b border-white/10 font-mono text-[10px] tracking-wider text-white/40 uppercase ${
-                  algorithm === 'priority' ? 'grid-cols-[40px_1fr_1fr_1fr_40px]' : 'grid-cols-[40px_1fr_1fr_40px]'
+                  (algorithm === 'priority' || algorithm === 'priority_preemptive') ? 'grid-cols-[40px_1fr_1fr_1fr_40px]' : 'grid-cols-[40px_1fr_1fr_40px]'
                 }`}
               >
                 <div>PID</div>
                 <div>Arrival</div>
                 <div>Burst</div>
-                {algorithm === 'priority' && <div>Priority</div>}
+                {(algorithm === 'priority' || algorithm === 'priority_preemptive') && <div>Priority</div>}
                 <div></div>
               </div>
               <AnimatePresence mode="popLayout">
@@ -560,7 +700,7 @@ export default function Simulator() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className={`grid gap-2 px-4 py-3 items-center border-b border-white/5 last:border-0 ${
-                      algorithm === 'priority' ? 'grid-cols-[40px_1fr_1fr_1fr_40px]' : 'grid-cols-[40px_1fr_1fr_40px]'
+                      (algorithm === 'priority' || algorithm === 'priority_preemptive') ? 'grid-cols-[40px_1fr_1fr_1fr_40px]' : 'grid-cols-[40px_1fr_1fr_40px]'
                     }`}
                   >
                     <span className="font-mono text-sm text-white/70">P{p.pid}</span>
@@ -578,7 +718,7 @@ export default function Simulator() {
                       onChange={(e) => updateProcess(p.pid, 'burstTime', Math.max(1, Number(e.target.value) || 1))}
                       className={inputClass}
                     />
-                    {algorithm === 'priority' && (
+                    {(algorithm === 'priority' || algorithm === 'priority_preemptive') && (
                       <input
                         type="number"
                         min={0}
@@ -756,18 +896,11 @@ export default function Simulator() {
                     {readyQueueAtStep.length > 0 && ` · Ready: P${readyQueueAtStep.join(', P')}`}
                   </span>
                 )}
-                <div className="ml-auto flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => result && downloadCSV(result)}
-                    className="px-3 py-1.5 rounded-lg border border-white/20 text-white/80 font-mono text-xs hover:bg-white/10"
-                  >Export CSV</button>
-                  <button
-                    type="button"
-                    onClick={() => ganttRef.current && downloadGanttPNG(ganttRef.current)}
-                    className="px-3 py-1.5 rounded-lg border border-white/20 text-white/80 font-mono text-xs hover:bg-white/10"
-                  >Export PNG</button>
-                </div>
+                {stepExplanation && (
+                  <p className="w-full font-sans text-xs text-white/70 bg-white/[0.06] rounded-lg px-3 py-2 border border-white/10" role="status">
+                    {stepExplanation}
+                  </p>
+                )}
               </div>
 
               {/* Algorithm Switch Notice */}

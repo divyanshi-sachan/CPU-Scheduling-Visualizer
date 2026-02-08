@@ -17,16 +17,40 @@ export interface GanttEntry {
   end: number;
 }
 
+export interface IdleSegment {
+  start: number;
+  end: number;
+}
+
 interface GanttChartProps {
   data: GanttEntry[];
   maxTime: number;
   height?: number;
+  /** When true, shows an "IDLE" row for periods when the CPU is not running any process */
+  showIdle?: boolean;
 }
 
-export default function GanttChart({ data, maxTime, height = 280 }: GanttChartProps) {
+function computeIdleSegments(data: GanttEntry[], maxTime: number): IdleSegment[] {
+  const segments = [...data].filter((d) => d.pid > 0).sort((a, b) => a.start - b.start);
+  if (segments.length === 0) return maxTime > 0 ? [{ start: 0, end: maxTime }] : [];
+  const idle: IdleSegment[] = [];
+  if (segments[0].start > 0) idle.push({ start: 0, end: segments[0].start });
+  for (let i = 1; i < segments.length; i++) {
+    const prevEnd = segments[i - 1].end;
+    const currStart = segments[i].start;
+    if (currStart > prevEnd) idle.push({ start: prevEnd, end: currStart });
+  }
+  const lastEnd = segments[segments.length - 1].end;
+  if (lastEnd < maxTime) idle.push({ start: lastEnd, end: maxTime });
+  return idle;
+}
+
+export default function GanttChart({ data, maxTime, height = 280, showIdle = true }: GanttChartProps) {
   const scale = maxTime <= 0 ? 0 : 100 / maxTime;
   const pids = [...new Set(data.map((d) => d.pid))].filter((p) => p > 0).sort((a, b) => a - b);
-  const rowHeight = Math.max(32, (height - 50) / Math.max(1, pids.length));
+  const idleSegments = showIdle ? computeIdleSegments(data, maxTime) : [];
+  const rowCount = pids.length + (idleSegments.length > 0 ? 1 : 0);
+  const rowHeight = Math.max(32, (height - 50) / Math.max(1, rowCount));
 
   // Context switches: boundaries where consecutive segments (by time) have different PIDs
   const sortedByTime = [...data].filter((d) => d.pid > 0).sort((a, b) => a.start - b.start);
@@ -105,6 +129,34 @@ export default function GanttChart({ data, maxTime, height = 280 }: GanttChartPr
               </motion.div>
             );
           })
+        )}
+        {idleSegments.length > 0 && (
+          <motion.div
+            className="flex items-center mb-1"
+            style={{ height: rowHeight }}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: pids.length * 0.05 }}
+          >
+            <div className="w-16 flex-shrink-0 font-mono text-xs text-white/40">IDLE</div>
+            <div className="flex-1 relative h-full rounded overflow-hidden bg-white/5">
+              {idleSegments.map((seg, i) => (
+                <motion.div
+                  key={`idle-${i}`}
+                  className="absolute top-1 bottom-1 rounded z-[1] border border-dashed border-white/20 bg-white/[0.06]"
+                  style={{
+                    left: `${(seg.start / maxTime) * 100}%`,
+                    width: `${Math.max(((seg.end - seg.start) / maxTime) * 100, 1)}%`,
+                    minWidth: 16,
+                  }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.3, delay: 0.1 + pids.length * 0.05 }}
+                  title={`CPU idle t=${seg.start}–${seg.end}`}
+                />
+              ))}
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
