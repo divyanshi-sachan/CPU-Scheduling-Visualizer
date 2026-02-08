@@ -16,6 +16,7 @@ const ALG_LABELS: Record<AlgorithmType, string> = {
   sjf: 'SJF',
   round_robin: 'Round Robin',
   priority: 'Priority',
+  priority_preemptive: 'Priority (Preemptive)',
 };
 
 interface ResultsProps {
