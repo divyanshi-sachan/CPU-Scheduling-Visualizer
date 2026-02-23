@@ -8,6 +8,7 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import GanttChart from '@/components/GanttChart';
 import Checkbox from '@/components/Checkbox';
+import ReadyQueueAnimation from '@/components/ReadyQueueAnimation';
 import type { ProcessInput, AlgorithmType, SimulateResponse } from '@/types';
 import { PRESETS } from '@/lib/simulator-presets';
 import { downloadCSV, downloadGanttPNG, downloadJSON } from '@/lib/export-utils';
@@ -67,6 +68,7 @@ export default function Simulator() {
   const [shareCopied, setShareCopied] = useState(false);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [algorithmBDropdownOpen, setAlgorithmBDropdownOpen] = useState(false);
+  const [showQueueAnimation, setShowQueueAnimation] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
@@ -296,6 +298,28 @@ export default function Simulator() {
       : '';
     return `P${entry.pid} runs for ${duration} time unit(s) (t=${entry.start}→${entry.end}).${readyStr}`;
   }, [stepIndex, result?.ganttChart, readyQueueAtStep]);
+
+  const isPreemptionAtStep = useMemo(() => {
+    if (stepIndex <= 0 || !result?.ganttChart?.length) return false;
+    const prev = result.ganttChart[stepIndex - 1];
+    const curr = result.ganttChart[stepIndex];
+    return prev && curr && prev.pid > 0 && curr.pid > 0 && prev.pid !== curr.pid;
+  }, [stepIndex, result?.ganttChart]);
+
+  const pushedBackPidAtStep = useMemo(() => {
+    if (stepIndex < 0 || !result?.ganttChart?.length) return null;
+    const entry = result.ganttChart[stepIndex];
+    if (!entry || entry.pid <= 0) return null;
+    const appearsAgain = result.ganttChart
+      .slice(stepIndex + 1)
+      .some((e) => e.pid === entry.pid);
+    return appearsAgain ? entry.pid : null;
+  }, [stepIndex, result?.ganttChart]);
+
+  const readyQueueExcludingRunning = useMemo(() => {
+    if (!currentStepEntry || currentStepEntry.pid <= 0) return readyQueueAtStep;
+    return readyQueueAtStep.filter((pid) => pid !== currentStepEntry!.pid);
+  }, [currentStepEntry, readyQueueAtStep]);
 
   const chartData = useMemo(() => {
     if (!result) return [];
@@ -966,12 +990,46 @@ export default function Simulator() {
                     {readyQueueAtStep.length > 0 && ` · Ready: P${readyQueueAtStep.join(', P')}`}
                   </span>
                 )}
-                {stepExplanation && (
-                  <p className="w-full font-sans text-xs text-white/70 bg-white/[0.06] rounded-lg px-3 py-2 border border-white/10" role="status">
-                    {stepExplanation}
-                  </p>
-                )}
+                <Checkbox
+                  checked={showQueueAnimation}
+                  onChange={setShowQueueAnimation}
+                  label="Live ready queue animation"
+                  className="ml-auto"
+                />
               </div>
+
+              {/* Live ready queue animation (when toggle on and step view) */}
+              {showQueueAnimation && result && stepIndex >= 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-4 rounded-xl bg-white/[0.06] border border-white/10"
+                >
+                  <ReadyQueueAnimation
+                    runningPid={currentStepEntry?.pid ?? null}
+                    readyQueue={readyQueueExcludingRunning}
+                    isPreemption={isPreemptionAtStep}
+                    pushedBackPid={pushedBackPidAtStep}
+                    stepLabel={
+                      currentStepEntry
+                        ? `P${currentStepEntry.pid} runs for ${currentStepEntry.end - currentStepEntry.start} unit(s) (t=${currentStepEntry.start}→${currentStepEntry.end})`
+                        : undefined
+                    }
+                  />
+                </motion.div>
+              )}
+
+              {/* Static step explanation (when animation off or step "all") */}
+              {!showQueueAnimation && stepExplanation && (
+                <p className="mb-4 font-sans text-xs text-white/70 bg-white/[0.06] rounded-lg px-3 py-2 border border-white/10" role="status">
+                  {stepExplanation}
+                </p>
+              )}
+              {showQueueAnimation && stepIndex < 0 && stepExplanation && (
+                <p className="mb-4 font-sans text-xs text-white/70 bg-white/[0.06] rounded-lg px-3 py-2 border border-white/10" role="status">
+                  {stepExplanation}
+                </p>
+              )}
 
               {/* Gantt Chart */}
               <motion.section
