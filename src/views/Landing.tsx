@@ -160,7 +160,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.5 }}
           >
-            An interactive visualization tool that brings Operating System scheduling concepts to life through real-time simulation and analysis.
+            Visualize FCFS, SJF, Round Robin, Priority, HRRN, Multilevel Queues, and I/O scheduling with animated Gantt charts and live metrics.
           </motion.p>
           <motion.div
             className="mt-12 flex flex-wrap gap-4 justify-center"
@@ -357,7 +357,7 @@ export default function Landing() {
             {
               num: '02',
               title: 'Multiple Algorithms',
-              desc: 'Implement FCFS, SJF (Preemptive), Round Robin, and Priority Scheduling with accurate behavior.',
+              desc: 'FCFS, SJF (preemptive & non-preemptive), Round Robin, Priority, HRRN, Multilevel Queue, MLFQ, and I/O-aware scheduling with accurate behavior.',
             },
             {
               num: '03',
@@ -420,7 +420,7 @@ export default function Landing() {
             <h3 className="font-display font-semibold text-white text-2xl mb-6">In Scope</h3>
             <ul className="space-y-4">
               {[
-                'FCFS, SJF, Round Robin, Priority algorithms',
+                'FCFS, SJF, RR, Priority, HRRN, MLQ, MLFQ, I/O scheduling',
                 'Real-time Gantt chart visualization',
                 'Performance metrics calculation',
                 'Smart algorithm switching',
@@ -504,7 +504,7 @@ export default function Landing() {
             viewport={viewport}
             transition={{ delay: 0.15 }}
           >
-            Our simulator implements four fundamental CPU scheduling algorithms, each with distinct characteristics and use cases.
+            The simulator supports multiple CPU scheduling algorithms—from basic FCFS and SJF to Round Robin, Priority (preemptive and non-preemptive), HRRN, Multilevel Queue, Multilevel Feedback Queue, and I/O-aware scheduling—each with distinct behavior and use cases.
           </motion.p>
         </div>
 
@@ -608,10 +608,13 @@ export default function Landing() {
             <h3 className="font-display font-semibold text-white text-xl mb-6">Completed Features</h3>
             <ul className="space-y-4">
               {[
-                'FCFS Algorithm - Non-preemptive, arrival-order execution',
-                'SJF Algorithm - Preemptive (SRTF) with dynamic re-evaluation',
+                'FCFS - Non-preemptive, arrival-order execution',
+                'SJF - Preemptive (SRTF) and non-preemptive variants',
                 'Round Robin - Time-sliced execution with configurable quantum',
-                'Priority Scheduling - Non-preemptive priority-based selection',
+                'Priority - Preemptive and non-preemptive priority scheduling',
+                'HRRN - Highest Response Ratio Next',
+                'MLQ / MLFQ - Multilevel and Multilevel Feedback Queues',
+                'FCFS + I/O - I/O bursts and CPU-I/O overlap',
                 'Smart Switcher - Automatic algorithm optimization',
                 'Metrics Engine - Wait time, turnaround, context switches',
                 'Gantt Chart - Animated timeline visualization',
@@ -794,7 +797,7 @@ export default function Landing() {
               <ul className="space-y-2.5 text-sm text-neutral-600">
                 <li className="flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-neutral-400" />
-                  FCFS, SJF, RR, Priority
+                  FCFS, SJF, RR, Priority, HRRN, MLQ, MLFQ, I/O
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-neutral-400" />
