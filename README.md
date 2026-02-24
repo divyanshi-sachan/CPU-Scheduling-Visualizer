@@ -12,6 +12,7 @@ A modern, interactive web application for visualizing and understanding CPU sche
 ## Table of Contents
 
 - [Overview](#overview)
+- [Detailed Report](#detailed-report)
 - [Features](#features)
 - [Supported Algorithms](#supported-algorithms)
 - [Tech Stack](#tech-stack)
@@ -36,6 +37,12 @@ CPU Scheduling is a fundamental concept in Operating Systems that determines whi
 - **Smart algorithm switching** that automatically optimizes based on workload characteristics
 
 Whether you're a student learning OS concepts or a developer building scheduling systems, this tool makes abstract concepts tangible and understandable.
+
+---
+
+## Detailed Report
+
+A **detailed project report** (problem statement, objectives, algorithms, implementation, metrics, and analysis) is available as **[report.pdf](report.pdf)**. It covers the full scope of the project, algorithm descriptions, system design, and results—suitable for course submissions or technical documentation.
 
 ---
 
